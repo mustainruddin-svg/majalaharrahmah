@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="googlebot" content="noindex, nofollow" />
+  <title>Majalah Digital – Yayasan Ar-Rahmah Sulawesi</title>
+
+  <!-- CDN Libraries -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* =============================================
+       CSS VARIABLES & RESET
+    ============================================= */
+    :root {
+      --gold:        #C8960C;
+      --gold-light:  #F0C93A;
+      --deep:        #0D1117;
+      --surface:     #161B22;
+      --border:      rgba(200, 150, 12, 0.25);
+      --text-main:   #F0EDE6;
+      --text-muted:  #8B949E;
+      --radius-lg:   16px;
+      --radius-sm:   8px;
+      --shadow-gold: 0 0 40px rgba(200, 150, 12, 0.18);
+      --shadow-page: 0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
+      --ff-display:  'Playfair Display', serif;
+      --ff-body:     'DM Sans', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--deep);
+      color: var(--text-main);
+      font-family: var(--ff-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(200,150,12,0.12) 0%, transparent 65%),
+        repeating-linear-gradient(0deg, transparent, transparent 79px, rgba(255,255,255,0.015) 80px),
+        repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(255,255,255,0.015) 80px);
+    }
+
+    /* =============================================
+       LOADING SCREEN
+    ============================================= */
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--deep);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      gap: 28px;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+    #loading-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .loading-logo {
+      font-family: var(--ff-display);
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      text-align: center;
+    }
+    .loading-logo span { color: var(--text-muted); font-size: 0.55em; display: block; margin-top: 4px; letter-spacing: 0.2em; font-family: var(--ff-body); font-weight: 400; text-transform: uppercase; }
+    .spinner-ring {
+      width: 52px; height: 52px;
+      border: 3px solid rgba(200,150,12,0.15);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    .loading-text {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+    /* =============================================
+       ERROR SCREEN
+    ============================================= */
+    #error-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--deep);
+      align-items: center;
+      justify-content: center;
+      z-index: 9998;
+      flex-direction: column;
+      gap: 16px;
+      padding: 24px;
+      text-align: center;
+    }
+    #error-screen.visible { display: flex; }
+    #error-screen i { font-size: 3rem; color: #E53E3E; }
+    #error-screen h2 { font-family: var(--ff-display); font-size: 1.5rem; color: var(--text-main); }
+    #error-screen p { color: var(--text-muted); font-size: 0.9rem; max-width: 400px; line-height: 1.6; }
+    #error-screen code { background: var(--surface); padding: 12px 18px; border-radius: var(--radius-sm); font-size: 0.75rem; color: var(--gold); display: block; margin-top: 8px; word-break: break-all; border: 1px solid var(--border); }
+
+    /* =============================================
+       APP WRAPPER
+    ============================================= */
+    #app {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 0 0 40px;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+    #app.visible { opacity: 1; }
+
+    /* =============================================
+       HEADER
+    ============================================= */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px clamp(16px, 4vw, 40px);
+      border-bottom: 1px solid var(--border);
+      background: rgba(13,17,23,0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-brand {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .brand-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; color: var(--deep);
+      flex-shrink: 0;
+    }
+    .brand-name {
+      font-family: var(--ff-display);
+      font-size: clamp(0.9rem, 2.5vw, 1.15rem);
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+    .brand-name span {
+      display: block;
+      font-family: var(--ff-body);
+      font-weight: 400;
+      font-size: 0.65em;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .header-actions {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .btn-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+    .btn-icon:hover { background: rgba(200,150,12,0.12); color: var(--gold); border-color: var(--gold); }
+
+    /* =============================================
+       MAIN FLIPBOOK AREA
+    ============================================= */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(20px, 5vh, 48px) clamp(12px, 3vw, 40px) 0;
+      position: relative;
+    }
+
+    /* Decorative ambient glow behind book */
+    .book-glow {
+      position: absolute;
+      width: min(700px, 90vw);
+      height: 300px;
+      background: radial-gradient(ellipse, rgba(200,150,12,0.1) 0%, transparent 70%);
+      pointer-events: none;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -40%);
+    }
+
+    #flipbook-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    /* The actual St.PageFlip canvas element */
+    #flipbook {
+      /* dimensions set by JS */
+    }
+
+    /* Page wrapper injected by JS into each page slot */
+    .page-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #1a1a1a;
+    }
+    .page-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .page-wrapper img.lazy { opacity: 0; transition: opacity 0.5s ease; }
+    .page-wrapper img.loaded { opacity: 1; }
+
+    /* CTA Button overlaid on each page */
+    .page-cta {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--ff-body);
+      font-weight: 600;
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      color: #fff;
+      white-space: nowrap;
+      text-decoration: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      z-index: 10;
+      backdrop-filter: blur(4px);
+    }
+    .page-cta:hover {
+      transform: translateX(-50%) translateY(-2px) scale(1.04);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.6);
+      filter: brightness(1.1);
+    }
+    .page-cta i { font-size: 0.85rem; }
+
+    /* Page skeleton while image loads */
+    .page-skeleton {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* Cover/back page style */
+    .page-cover { background: linear-gradient(160deg, #1a1208 0%, #0d0d0d 100%); }
+
+    /*
+      Cover page state: front cover (page 0) and back cover (last page)
+      should display as a single page centred, not a spread.
+      St.PageFlip handles this internally when showCover:true and the
+      page element has class "page--cover".
+      We add a subtle left/right shadow asymmetry to reinforce it.
+    */
+    #flipbook-container.is-cover-page .page--cover {
+      box-shadow: 4px 0 24px rgba(0,0,0,0.6);
+    }
+
+    /* =============================================
+       NAVIGATION BAR
+    ============================================= */
+    #nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(8px, 2vw, 20px);
+      margin-top: clamp(20px, 4vh, 36px);
+      padding: 0 16px;
+      flex-wrap: wrap;
+    }
+
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: 50px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-main);
+      cursor: pointer;
+      font-family: var(--ff-body);
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      transition: all 0.25s ease;
+      user-select: none;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: rgba(200,150,12,0.14);
+      border-color: var(--gold);
+      color: var(--gold);
+      transform: translateY(-1px);
+    }
+    .nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .nav-btn i { font-size: 0.8rem; }
+
+    .page-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 20px;
+      border-radius: 50px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      min-width: 120px;
+      justify-content: center;
+    }
+    .page-indicator strong { color: var(--gold); font-weight: 600; }
+
+    /* Thumbnail strip (desktop) */
+    #thumb-strip {
+      display: none; /* shown via JS on desktop */
+      gap: 6px;
+      margin-top: 20px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow-x: auto;
+      max-width: min(900px, 95vw);
+      scrollbar-width: thin;
+      scrollbar-color: var(--gold) transparent;
+    }
+    #thumb-strip.active { display: flex; }
+    .thumb-item {
+      flex-shrink: 0;
+      width: 44px;
+      height: 62px;
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.2s, transform 0.2s;
+      opacity: 0.6;
+    }
+    .thumb-item:hover { opacity: 0.9; transform: scale(1.05); }
+    .thumb-item.active { border-color: var(--gold); opacity: 1; }
+    .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* =============================================
+       ZOOM OVERLAY
+    ============================================= */
+    #zoom-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 9000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+      backdrop-filter: blur(8px);
+    }
+    #zoom-overlay.visible { display: flex; }
+    #zoom-overlay img {
+      max-width: 92vw;
+      max-height: 92vh;
+      object-fit: contain;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06);
+      animation: zoomIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    #zoom-close {
+      position: absolute;
+      top: 20px; right: 20px;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    #zoom-close:hover { background: rgba(200,150,12,0.3); }
+    @keyframes zoomIn { from{opacity:0;transform:scale(0.88)} to{opacity:1;transform:scale(1)} }
+
+    /* =============================================
+       FOOTER
+    ============================================= */
+    footer {
+      text-align: center;
+      padding: 28px 16px 12px;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      margin-top: 32px;
+    }
+    footer a { color: var(--gold); text-decoration: none; }
+
+    /* =============================================
+       RESPONSIVE TWEAKS
+    ============================================= */
+    @media (max-width: 600px) {
+      .nav-btn span { display: none; }
+      .nav-btn { padding: 10px 14px; }
+    }
+    @media (min-width: 900px) {
+      #thumb-strip { display: flex; }
+    }
+
+    /* =============================================
+       TOAST
+    ============================================= */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 10px 22px;
+      border-radius: 50px;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      z-index: 9999;
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events: none;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════
+       LOADING SCREEN
+  ══════════════════════════════════ -->
+  <div id="loading-screen">
+    <div class="loading-logo">
+      Ar-Rahmah Digital
+      <span>Majalah Interaktif</span>
+    </div>
+    <div class="spinner-ring"></div>
+    <div class="loading-text">Memuat konten majalah…</div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       ERROR SCREEN
+  ══════════════════════════════════ -->
+  <div id="error-screen">
+    <i class="fas fa-exclamation-triangle"></i>
+    <h2>Gagal Memuat Data</h2>
+    <p>Tidak dapat mengambil data dari Google Sheets. Pastikan URL CSV sudah benar dan spreadsheet sudah dipublikasikan ke web.</p>
+    <code id="error-url"></code>
+    <p style="margin-top:12px; font-size:0.78rem; color: var(--gold);">
+      Cara fix: Google Sheets → File → Share → Publish to web → pilih CSV
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════
+       MAIN APP
+  ══════════════════════════════════ -->
+  <div id="app">
+    <header>
+      <div class="header-brand">
+        <div class="brand-icon"><i class="fas fa-book-open"></i></div>
+        <div class="brand-name">
+          Majalah Digital
+          <span>Yayasan Ar-Rahmah Sulawesi</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" id="btn-fullscreen" title="Fullscreen">
+          <i class="fas fa-expand"></i>
+        </button>
+        <button class="btn-icon" id="btn-thumbs" title="Toggle Thumbnail Strip">
+          <i class="fas fa-th"></i>
+        </button>
+        <button class="btn-icon" id="btn-sound" title="Sound On/Off">
+          <i class="fas fa-volume-up"></i>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <div class="book-glow"></div>
+      <div id="flipbook-container">
+        <div id="flipbook"></div>
+      </div>
+
+      <!-- Navigation -->
+      <div id="nav-bar">
+        <button class="nav-btn" id="btn-first" title="Halaman Pertama">
+          <i class="fas fa-angles-left"></i>
+          <span>Pertama</span>
+        </button>
+        <button class="nav-btn" id="btn-prev">
+          <i class="fas fa-chevron-left"></i>
+          <span>Sebelumnya</span>
+        </button>
+        <div class="page-indicator">
+          <i class="fas fa-file-alt" style="font-size:0.75rem; color:var(--gold)"></i>
+          Hal <strong id="current-page">1</strong> / <strong id="total-pages">–</strong>
+        </div>
+        <button class="nav-btn" id="btn-next">
+          <span>Berikutnya</span>
+          <i class="fas fa-chevron-right"></i>
+        </button>
+        <button class="nav-btn" id="btn-last" title="Halaman Terakhir">
+          <span>Terakhir</span>
+          <i class="fas fa-angles-right"></i>
+        </button>
+      </div>
+
+      <!-- Thumbnail Strip -->
+      <div id="thumb-strip"></div>
+    </main>
+
+    <footer>
+      &copy; <span id="year"></span> Yayasan Ar-Rahmah Sulawesi &nbsp;·&nbsp;
+      <a href="https://arrahmahmakassar.sch.id" target="_blank" rel="noopener">arrahmahmakassar.sch.id</a>
+      &nbsp;·&nbsp; Majalah Digital v1.0
+    </footer>
+  </div>
+
+  <!-- Zoom Overlay -->
+  <div id="zoom-overlay">
+    <button id="zoom-close"><i class="fas fa-times"></i></button>
+    <img id="zoom-img" src="" alt="Zoomed page" />
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast"></div>
+
+
+  <script>
+  // ╔══════════════════════════════════════════════════════════╗
+  //   KONFIGURASI – Ganti URL ini dengan link CSV Anda
+  // ╚══════════════════════════════════════════════════════════╝
+  const csvUrl = https://docs.google.com/spreadsheets/d/e/2PACX-1vQRZzC0KBmw1aWASVwugsZV0vZssOtMzpLnjY_CO1EIrZyw0y4CQyZwAnYJZmyekQ/pub?gid=228803294&single=true&output=csv;
+
+  // ── Pengaturan Ukuran Halaman (A5 Portrait ratio = 1 : 1.414) ──
+  const PAGE_W = 400;   // lebar 1 halaman (px)
+  const PAGE_H = 566;   // tinggi halaman  (px)
+
+  // ── Pengaturan Suara ──
+  let soundEnabled = true;
+  const flipAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  function playFlipSound() {
+    if (!soundEnabled || !flipAudioCtx) return;
+    try {
+      const buf = flipAudioCtx.createBuffer(1, flipAudioCtx.sampleRate * 0.08, flipAudioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.35));
+      }
+      const src = flipAudioCtx.createBufferSource();
+      const gain = flipAudioCtx.createGain();
+      gain.gain.value = 0.08;
+      src.buffer = buf;
+      src.connect(gain);
+      gain.connect(flipAudioCtx.destination);
+      src.start();
+    } catch(e) {}
+  }
+
+  // ──────────────────────────────────────────────
+  //   STATE
+  // ──────────────────────────────────────────────
+  let pageFlip = null;
+  let pages    = [];       // parsed & filtered CSV rows
+  let totalPages = 0;
+
+  // ──────────────────────────────────────────────
+  //   UTILITY
+  // ──────────────────────────────────────────────
+  function showToast(msg, duration = 2400) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration);
+  }
+
+  function hideLoading() {
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('app').classList.add('visible');
+  }
+
+  function showError(url) {
+    document.getElementById('loading-screen').classList.add('hidden');
+    document.getElementById('error-screen').classList.add('visible');
+    document.getElementById('error-url').textContent = url || '(URL belum diatur)';
+  }
+
+  function isMobile() {
+    return window.innerWidth < 768;
+  }
+
+  function getBookDimensions() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const mobile = isMobile();
+
+    if (mobile) {
+      // Single page mode always on mobile
+      const maxW = Math.min(vw - 32, 380);
+      const h    = Math.round(maxW * (PAGE_H / PAGE_W));
+      // page-flip width param = 1 page width (it doubles internally for spread)
+      return { pageW: maxW, height: h };
+    } else {
+      // Double page spread
+      const availH = vh - 220;
+      const maxW   = Math.min(vw - 80, 900);
+      const byH    = Math.round(availH * (PAGE_W / PAGE_H)) * 2;
+      const totalW = Math.min(maxW, byH);
+      const pageW  = Math.round(totalW / 2);
+      const h      = Math.round(pageW * (PAGE_H / PAGE_W));
+      return { pageW, height: h };
+    }
+  }
+
+  // ──────────────────────────────────────────────
+  //   BUILD PAGE HTML
+  // ──────────────────────────────────────────────
+  function buildPageDiv(row, isCover) {
+    const wrapper = document.createElement('div');
+    // St.PageFlip requires class "page--cover" on first & last page
+    // so it renders them as a single centred page, not a spread.
+    wrapper.className = isCover ? 'page-wrapper page--cover' : 'page-wrapper';
+
+    if (row.URL_Gambar) {
+      const img = document.createElement('img');
+      img.className = 'lazy';
+      img.dataset.src = row.URL_Gambar;
+      img.alt = `Halaman ${row.No_Halaman}`;
+      img.addEventListener('load', () => img.classList.add('loaded'));
+      img.addEventListener('error', () => {
+        img.src = `https://placehold.co/${PAGE_W}x${PAGE_H}/1a1a1a/333?text=Hal+${row.No_Halaman}`;
+        img.classList.add('loaded');
+      });
+      wrapper.appendChild(img);
+
+      // Double-click to zoom
+      wrapper.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        openZoom(img.src || img.dataset.src);
+      });
+    } else {
+      const skel = document.createElement('div');
+      skel.className = 'page-skeleton';
+      wrapper.appendChild(skel);
+    }
+
+    // CTA Button
+    if (row.Link_Tujuan && row.Teks_Tombol) {
+      const btn = document.createElement('a');
+      btn.className = 'page-cta';
+      btn.href      = row.Link_Tujuan;
+      btn.target    = '_blank';
+      btn.rel       = 'noopener noreferrer';
+      btn.style.background = row.Warna_Tema || '#C8960C';
+
+      if (row.Ikon_Tombol) {
+        const icon = document.createElement('i');
+        icon.className = row.Ikon_Tombol;
+        btn.appendChild(icon);
+      }
+      btn.appendChild(document.createTextNode(' ' + row.Teks_Tombol));
+      wrapper.appendChild(btn);
+    }
+
+    return wrapper;
+  }
+
+  // ──────────────────────────────────────────────
+  //   LAZY IMAGE LOADER (IntersectionObserver)
+  // ──────────────────────────────────────────────
+  function initLazyLoad() {
+    if (!('IntersectionObserver' in window)) {
+      // Fallback: load all immediately
+      document.querySelectorAll('img.lazy').forEach(img => {
+        img.src = img.dataset.src;
+      });
+      return;
+    }
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          img.src = img.dataset.src;
+          obs.unobserve(img);
+        }
+      });
+    }, { rootMargin: '100px' });
+
+    document.querySelectorAll('img.lazy').forEach(img => obs.observe(img));
+  }
+
+  // ──────────────────────────────────────────────
+  //   ZOOM OVERLAY
+  // ──────────────────────────────────────────────
+  function openZoom(src) {
+    const overlay = document.getElementById('zoom-overlay');
+    const img     = document.getElementById('zoom-img');
+    img.src = src;
+    overlay.classList.add('visible');
+  }
+  function closeZoom() {
+    document.getElementById('zoom-overlay').classList.remove('visible');
+  }
+  document.getElementById('zoom-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget || e.target.id === 'zoom-close' || e.target.closest('#zoom-close')) {
+      closeZoom();
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeZoom();
+  });
+
+  // ──────────────────────────────────────────────
+  //   THUMBNAIL STRIP
+  // ──────────────────────────────────────────────
+  function buildThumbs() {
+    const strip = document.getElementById('thumb-strip');
+    strip.innerHTML = '';
+    pages.forEach((row, i) => {
+      const item = document.createElement('div');
+      item.className = 'thumb-item';
+      item.dataset.index = i;
+      if (row.URL_Gambar) {
+        const img = document.createElement('img');
+        img.src = row.URL_Gambar;
+        img.alt = `Hal ${row.No_Halaman}`;
+        item.appendChild(img);
+      }
+      item.addEventListener('click', () => {
+        if (pageFlip) {
+          pageFlip.flip(i);
+        }
+      });
+      strip.appendChild(item);
+    });
+  }
+
+  function updateThumbActive(pageIndex) {
+    document.querySelectorAll('.thumb-item').forEach((el, i) => {
+      el.classList.toggle('active', i === pageIndex || i === pageIndex + 1);
+    });
+    // Scroll active thumb into view
+    const active = document.querySelector('.thumb-item.active');
+    if (active) active.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ──────────────────────────────────────────────
+  //   PAGE INDICATOR
+  // ──────────────────────────────────────────────
+  function updatePageIndicator(currentIndex) {
+    const cur = document.getElementById('current-page');
+    const tot = document.getElementById('total-pages');
+    const mobile = isMobile();
+
+    if (mobile) {
+      cur.textContent = currentIndex + 1;
+    } else {
+      const left  = currentIndex + 1;
+      const right = Math.min(currentIndex + 2, totalPages);
+      cur.textContent = left === right ? left : `${left}–${right}`;
+    }
+    tot.textContent = totalPages;
+
+    // Update nav button states
+    document.getElementById('btn-prev').disabled  = currentIndex <= 0;
+    document.getElementById('btn-first').disabled = currentIndex <= 0;
+    document.getElementById('btn-next').disabled  = currentIndex >= totalPages - 1;
+    document.getElementById('btn-last').disabled  = currentIndex >= totalPages - 1;
+
+    updateThumbActive(currentIndex);
+  }
+
+  // ──────────────────────────────────────────────
+  //   INIT PAGE-FLIP
+  // ──────────────────────────────────────────────
+  function isCoverPage(index) {
+    // Index 0 = front cover, last index = back cover → single-page display
+    return index === 0 || index >= totalPages - 1;
+  }
+
+  function setCoverClass(index) {
+    const fc = document.getElementById('flipbook-container');
+    fc.classList.toggle('is-cover-page', isCoverPage(index));
+  }
+
+  function initFlipbook() {
+    const dims   = getBookDimensions();
+    const mobile = isMobile();
+    const container = document.getElementById('flipbook');
+
+    // Clear previous instance on resize
+    if (pageFlip) {
+      try { pageFlip.destroy(); } catch(e) {}
+      container.innerHTML = '';
+    }
+
+    pageFlip = new St.PageFlip(container, {
+      width:            dims.pageW,   // ONE page width; library doubles for spread
+      height:           dims.height,
+      size:             'fixed',
+      minWidth:         100,
+      maxWidth:         PAGE_W,
+      minHeight:        141,
+      maxHeight:        PAGE_H,
+      maxShadowOpacity: 0.5,
+      showCover:        true,   // renders page[0] & page[last] as single centred page
+      mobileScrollSupport: false,
+      drawShadow:       true,
+      flippingTime:     700,
+      usePortrait:      mobile,
+      startZIndex:      0,
+      autoSize:         false,
+      clickEventForward: false,
+    });
+
+    // Build page elements — pass isCover flag so wrapper gets correct class
+    const lastIdx = pages.length - 1;
+    const pageEls = pages.map((row, i) => buildPageDiv(row, i === 0 || i === lastIdx));
+
+    pageFlip.loadFromHTML(pageEls);
+
+    // Events
+    pageFlip.on('flip', (e) => {
+      playFlipSound();
+      updatePageIndicator(e.data);
+      setCoverClass(e.data);
+    });
+    pageFlip.on('changeOrientation', (e) => {
+      showToast(e.data === 'portrait' ? 'Mode 1 Halaman' : 'Mode 2 Halaman');
+    });
+    pageFlip.on('init', (e) => {
+      const startPage = e.data.page || 0;
+      updatePageIndicator(startPage);
+      setCoverClass(startPage);
+      initLazyLoad();
+    });
+
+    return pageFlip;
+  }
+
+  // ──────────────────────────────────────────────
+  //   MAIN: FETCH & PARSE CSV
+  // ──────────────────────────────────────────────
+  function loadMagazine() {
+    if (!csvUrl || csvUrl === 'URL_SPREADSHEET_DISINI') {
+      // Demo mode – generate placeholder pages
+      const demo = Array.from({ length: 24 }, (_, i) => ({
+        No_Halaman:  i + 1,
+        URL_Gambar:  `https://placehold.co/${PAGE_W}x${PAGE_H}/1a2030/C8960C?text=Halaman+${i+1}`,
+        Teks_Tombol: i % 4 === 0 ? 'Tonton Video' : '',
+        Link_Tujuan: i % 4 === 0 ? 'https://youtube.com' : '',
+        Ikon_Tombol: 'fas fa-play',
+        Warna_Tema:  i % 2 === 0 ? '#1B5E20' : '#C8960C',
+        Status_Aktif:'Ya',
+      }));
+      pages      = demo;
+      totalPages = demo.length;
+      buildThumbs();
+      initFlipbook();
+      hideLoading();
+      showToast('Mode Demo – Ganti csvUrl dengan link Google Sheets Anda', 4000);
+      return;
+    }
+
+    Papa.parse(csvUrl, {
+      download:  true,
+      header:    true,
+      skipEmptyLines: true,
+      transformHeader: h => h.trim(),
+      complete: (results) => {
+        if (!results.data || results.data.length === 0) {
+          showError(csvUrl);
+          return;
+        }
+
+        // Filter & sort
+        pages = results.data
+          .filter(row => {
+            const aktif = (row['Status_Aktif'] || '').trim().toLowerCase();
+            return aktif === 'ya' || aktif === 'yes' || aktif === '1' || aktif === 'true';
+          })
+          .sort((a, b) => parseInt(a['No_Halaman']) - parseInt(b['No_Halaman']))
+          .map(row => ({
+            No_Halaman:  (row['No_Halaman'] || '').trim(),
+            URL_Gambar:  (row['URL_Gambar']  || '').trim(),
+            Teks_Tombol: (row['Teks_Tombol'] || '').trim(),
+            Link_Tujuan: (row['Link_Tujuan'] || '').trim(),
+            Ikon_Tombol: (row['Ikon_Tombol'] || '').trim(),
+            Warna_Tema:  (row['Warna_Tema']  || '#C8960C').trim(),
+            Status_Aktif:(row['Status_Aktif']|| '').trim(),
+          }));
+
+        if (pages.length === 0) {
+          showError(csvUrl + ' (Tidak ada baris dengan Status_Aktif = Ya)');
+          return;
+        }
+
+        totalPages = pages.length;
+        document.getElementById('total-pages').textContent = totalPages;
+
+        buildThumbs();
+        initFlipbook();
+        hideLoading();
+      },
+      error: (err) => {
+        console.error('PapaParse error:', err);
+        showError(csvUrl);
+      }
+    });
+  }
+
+  // ──────────────────────────────────────────────
+  //   NAVIGATION BUTTONS
+  // ──────────────────────────────────────────────
+  document.getElementById('btn-prev').addEventListener('click', () => {
+    pageFlip && pageFlip.flipPrev();
+  });
+  document.getElementById('btn-next').addEventListener('click', () => {
+    pageFlip && pageFlip.flipNext();
+  });
+  document.getElementById('btn-first').addEventListener('click', () => {
+    pageFlip && pageFlip.flip(0);
+  });
+  document.getElementById('btn-last').addEventListener('click', () => {
+    pageFlip && pageFlip.flip(totalPages - 1);
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (!pageFlip) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') pageFlip.flipNext();
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   pageFlip.flipPrev();
+    if (e.key === 'Home') pageFlip.flip(0);
+    if (e.key === 'End')  pageFlip.flip(totalPages - 1);
+  });
+
+  // ──────────────────────────────────────────────
+  //   HEADER BUTTONS
+  // ──────────────────────────────────────────────
+  document.getElementById('btn-fullscreen').addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      document.querySelector('#btn-fullscreen i').className = 'fas fa-compress';
+    } else {
+      document.exitFullscreen();
+      document.querySelector('#btn-fullscreen i').className = 'fas fa-expand';
+    }
+  });
+
+  document.getElementById('btn-thumbs').addEventListener('click', () => {
+    const strip = document.getElementById('thumb-strip');
+    strip.classList.toggle('active');
+    showToast(strip.classList.contains('active') ? 'Thumbnail ditampilkan' : 'Thumbnail disembunyikan');
+  });
+
+  document.getElementById('btn-sound').addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    const icon = document.querySelector('#btn-sound i');
+    icon.className = soundEnabled ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+    showToast(soundEnabled ? 'Suara diaktifkan' : 'Suara dinonaktifkan');
+  });
+
+  // ──────────────────────────────────────────────
+  //   RESIZE HANDLER (debounced)
+  // ──────────────────────────────────────────────
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (pageFlip && pages.length > 0) {
+        const currentPage = pageFlip.getCurrentPageIndex();
+        initFlipbook();
+        setTimeout(() => {
+          pageFlip && pageFlip.flip(currentPage);
+        }, 100);
+      }
+    }, 300);
+  });
+
+  // ──────────────────────────────────────────────
+  //   YEAR IN FOOTER
+  // ──────────────────────────────────────────────
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // ──────────────────────────────────────────────
+  //   BOOT
+  // ──────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', loadMagazine);
+
+  </script>
+</body>
+</html>
