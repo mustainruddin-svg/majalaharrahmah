@@ -20,6 +20,7 @@
     /* =============================================
        CSS VARIABLES & RESET
     ============================================= */
+    /* ── DARK MODE (default) ── */
     :root {
       --gold:        #C8960C;
       --gold-light:  #F0C93A;
@@ -34,7 +35,75 @@
       --shadow-page: 0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
       --ff-display:  'Playfair Display', serif;
       --ff-body:     'DM Sans', sans-serif;
+      --bg-grid-line: rgba(255,255,255,0.015);
+      --bg-glow:     rgba(200,150,12,0.12);
+      --header-bg:   rgba(13,17,23,0.85);
+      --skeleton-a:  #1a1a1a;
+      --skeleton-b:  #222;
+      --footer-border: rgba(255,255,255,0.04);
     }
+
+    /* ── LIGHT MODE ── */
+    html.light {
+      --deep:        #F5F0E8;
+      --surface:     #FFFFFF;
+      --border:      rgba(139, 90, 0, 0.2);
+      --text-main:   #1A1A2E;
+      --text-muted:  #6B7280;
+      --shadow-page: 0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06);
+      --bg-grid-line: rgba(0,0,0,0.03);
+      --bg-glow:     rgba(200,150,12,0.08);
+      --header-bg:   rgba(245,240,232,0.92);
+      --skeleton-a:  #e8e4dc;
+      --skeleton-b:  #d8d4cc;
+      --footer-border: rgba(0,0,0,0.08);
+    }
+
+    /* ── THEME TOGGLE BUTTON ── */
+    #btn-theme {
+      position: relative;
+      width: 56px;
+      height: 28px;
+      border-radius: 50px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      padding: 0;
+      transition: background 0.3s, border-color 0.3s;
+      flex-shrink: 0;
+    }
+    #btn-theme:hover { border-color: var(--gold); }
+    .theme-track {
+      position: absolute;
+      inset: 2px;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 5px;
+      pointer-events: none;
+    }
+    .theme-track i {
+      font-size: 0.6rem;
+      transition: opacity 0.3s, color 0.3s;
+    }
+    .theme-track .icon-moon { color: #a0a8c0; }
+    .theme-track .icon-sun  { color: #F0C93A; opacity: 0.4; }
+    html.light .theme-track .icon-moon { opacity: 0.4; }
+    html.light .theme-track .icon-sun  { opacity: 1; }
+    .theme-knob {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events: none;
+    }
+    html.light .theme-knob { transform: translateX(28px); }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -46,10 +115,11 @@
       font-family: var(--ff-body);
       min-height: 100vh;
       overflow-x: hidden;
+      transition: background-color 0.4s ease, color 0.4s ease;
       background-image:
-        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(200,150,12,0.12) 0%, transparent 65%),
-        repeating-linear-gradient(0deg, transparent, transparent 79px, rgba(255,255,255,0.015) 80px),
-        repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(255,255,255,0.015) 80px);
+        radial-gradient(ellipse 80% 60% at 50% -10%, var(--bg-glow) 0%, transparent 65%),
+        repeating-linear-gradient(0deg, transparent, transparent 79px, var(--bg-grid-line) 80px),
+        repeating-linear-gradient(90deg, transparent, transparent 79px, var(--bg-grid-line) 80px);
     }
 
     /* =============================================
@@ -142,7 +212,7 @@
       justify-content: space-between;
       padding: 18px clamp(16px, 4vw, 40px);
       border-bottom: 1px solid var(--border);
-      background: rgba(13,17,23,0.85);
+      background: var(--header-bg);
       backdrop-filter: blur(12px);
       position: sticky;
       top: 0;
@@ -285,7 +355,7 @@
     .page-skeleton {
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%);
+      background: linear-gradient(90deg, var(--skeleton-a) 25%, var(--skeleton-b) 50%, var(--skeleton-a) 75%);
       background-size: 200% 100%;
       animation: shimmer 1.4s infinite;
     }
@@ -442,7 +512,7 @@
       font-size: 0.72rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      border-top: 1px solid rgba(255,255,255,0.04);
+      border-top: 1px solid var(--footer-border);
       margin-top: 32px;
     }
     footer a { color: var(--gold); text-decoration: none; }
@@ -529,6 +599,13 @@
         </button>
         <button class="btn-icon" id="btn-sound" title="Sound On/Off">
           <i class="fas fa-volume-up"></i>
+        </button>
+        <button id="btn-theme" title="Ganti Tema Terang/Gelap" aria-label="Toggle dark/light mode">
+          <div class="theme-track">
+            <i class="fas fa-moon icon-moon"></i>
+            <i class="fas fa-sun icon-sun"></i>
+          </div>
+          <div class="theme-knob"></div>
         </button>
       </div>
     </header>
@@ -1042,8 +1119,41 @@
   document.getElementById('year').textContent = new Date().getFullYear();
 
   // ──────────────────────────────────────────────
+  //   DARK / LIGHT MODE
+  // ──────────────────────────────────────────────
+  function applyTheme(mode) {
+    const html = document.documentElement;
+    if (mode === 'light') {
+      html.classList.add('light');
+    } else {
+      html.classList.remove('light');
+    }
+    localStorage.setItem('arrahmah-theme', mode);
+  }
+
+  function initTheme() {
+    // Cek preferensi yang tersimpan, atau ikuti setting sistem
+    const saved = localStorage.getItem('arrahmah-theme');
+    if (saved) {
+      applyTheme(saved);
+    } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+      applyTheme('light');
+    } else {
+      applyTheme('dark');
+    }
+  }
+
+  document.getElementById('btn-theme').addEventListener('click', () => {
+    const isLight = document.documentElement.classList.contains('light');
+    const newMode = isLight ? 'dark' : 'light';
+    applyTheme(newMode);
+    showToast(newMode === 'light' ? '☀️  Mode Terang' : '🌙  Mode Gelap');
+  });
+
+  // ──────────────────────────────────────────────
   //   BOOT
   // ──────────────────────────────────────────────
+  initTheme();
   window.addEventListener('DOMContentLoaded', loadMagazine);
 
   </script>
